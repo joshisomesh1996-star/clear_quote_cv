@@ -1,132 +1,119 @@
-# Car Orientation Classification Pipeline – ClearQuote Assignment
+# Car Orientation Classification – ClearQuote Assignment
 
-This project implements an end-to-end computer vision pipeline to classify the orientation of a car from an image. The pipeline predicts one of the following orientation classes:
-
-- front
-- frontleft
-- frontright
-- rear
-- rearleft
-- rearright
-- random
-
-The solution is designed for edge deployment and uses a TensorFlow Lite (TFLite) model for CPU-only inference.
-
-# Car Orientation Classification Pipeline – ClearQuote Assignment
-
-This project implements an end-to-end computer vision pipeline to classify the orientation of a car from an image. The pipeline predicts one of the following orientation classes:
-
-- front
-- frontleft
-- frontright
-- rear
-- rearleft
-- rearright
-- random
-
-The solution is designed for edge deployment and uses a TensorFlow Lite (TFLite) model for CPU-only inference.
-
-## Pipeline Description
-
-The pipeline performs the following steps:
-
-1. Parses annotated car-part information from VIA JSON files.
-2. Applies a rule-based labeling strategy to assign orientation labels.
-3. Trains a deep learning model to learn orientation patterns.
-4. Converts the trained model to TensorFlow Lite format.
-5. Runs inference on a folder of test images and stores predictions in a pandas DataFrame.
-
-The inference pipeline is modular and can be executed using a single command.
-
-## Labeling Flowchart
-
-The rule-based labeling logic described above is illustrated in the following flowchart.
-
-*(Insert labeling flowchart image here: label_logic_flow_chart.png)*
-
-## Model Training
-
-The model was trained using MobileNetV2 as the backbone architecture, initialized with ImageNet pretrained weights. This choice provides a good balance between accuracy and computational efficiency.
-
-All images were resized to 224×224, converted to RGB format, and normalized using ImageNet mean and standard deviation values.
-
-Transfer learning was applied by freezing the majority of the backbone layers initially and selectively unfreezing the last few inverted residual blocks to allow fine-tuning on the car orientation dataset.
-
-The model was trained using categorical cross-entropy loss and the Adam optimizer. Early stopping was applied based on validation loss to prevent overfitting. The best-performing model checkpoint was saved and later converted to TensorFlow Lite format for deployment.
-
-## Hyperparameter Tuning
-
-Hyperparameter tuning was performed using an automated search strategy to improve validation performance.
-
-The following parameters were tuned:
-- Learning rate
-- Weight decay
-- Dropout rate
-- Number of unfrozen MobileNetV2 blocks
-- Batch size
-
-Each trial trained the model for a limited number of epochs and evaluated validation accuracy. Early pruning was applied to stop underperforming trials. The configuration that achieved the highest validation accuracy was selected for final training.
-
-This tuning process helped balance generalization performance and model stability while keeping the architecture lightweight for edge deployment.
-
-## Training Flow
-
-```mermaid
-flowchart TD
-    A[Load Dataset] --> B[Preprocess Images]
-    B --> C[Split Train and Validation Sets]
-    C --> D[Load Pretrained MobileNetV2]
-    D --> E[Freeze Base Layers]
-    E --> F[Unfreeze Selected Blocks]
-    F --> G[Train Model]
-    G --> H[Validate Model]
-    H --> I{Early Stopping}
-    I -- No --> G
-    I -- Yes --> J[Save Best Model]
-    J --> K[Convert Model to TFLite]
-
+## Table of Contents
+1. [Problem Overview](#problem-overview)
+2. [Dataset Preparation](#dataset-preparation)
+3. [Labeling Logic](#labeling-logic)
+4. [Data Augmentation](#data-augmentation)
+5. [Model Used](#model-used)
+6. [Training Parameters and Hyperparameters](#training-parameters-and-hyperparameters)
+7. [Inference Pipeline](#inference-pipeline)
+8. [Instructions to Run on a New System](#instructions-to-run-on-a-new-system)
 
 ---
 
-## 🔹 BLOCK 8 — Inference Pipeline
+## Problem Overview
 
-```markdown
+The objective of this task is to build a real-time, edge-compatible computer vision solution that classifies the orientation of a car from an input image. The model identifies whether an image belongs to one of the following categories:
+
+- front  
+- frontleft  
+- frontright  
+- rear  
+- rearleft  
+- rearright  
+
+Images that do not belong to any of these categories are classified as **random**.  
+The final solution is converted to **TensorFlow Lite (TFLite)** format, and an inference pipeline is provided to run predictions on a folder of test images.
+
+---
+
+## Dataset Preparation
+
+The dataset consists of multiple folders containing car images. Images are divided into folders only for readability; all images are treated uniformly during training.
+
+Annotations are provided in **VIA (VGG Image Annotator) JSON format**, stored folder-wise. Each image contains multiple annotated car parts under the `identity` attribute. The actual image filename is taken from the `filename` field in the JSON annotation, not from the VIA-generated key.
+
+For each image, all annotated part identities are extracted and used to infer the overall vehicle orientation. Annotation classes that are not relevant to orientation determination are ignored.
+
+---
+
+## Labeling Logic
+
+A rule-based approach was used to assign orientation labels from annotations.
+
+Front orientation was inferred using parts such as bonnet, front bumper, windshield, headlamp, and their partial variants. Rear orientation was inferred using parts such as rear bumper, tailgate, rear windshield, taillamp, and their partial variants.
+
+Left and right orientation was inferred using annotated part names prefixed with **left** or **right**.
+
+The final label was assigned by combining:
+- face (front or rear)
+- side (left, right, or none)
+
+Images where orientation could not be reliably inferred were labeled as **random** to avoid introducing noise into the primary classes.
+
+---
+
+## Data Augmentation
+
+During training, light data augmentation was applied in the form of **random brightness and contrast adjustments** to improve generalization. No geometric transformations were applied to preserve orientation semantics.
+
+No augmentation was applied during validation or inference.
+
+---
+
+## Model Used
+
+The model architecture is based on **MobileNetV2**, selected for its efficiency and suitability for edge deployment. The backbone was initialized with **ImageNet pretrained weights** and fine-tuned for the car orientation classification task.
+
+---
+
+## Training Parameters and Hyperparameters
+
+The model was trained using **categorical cross-entropy loss** and the **Adam optimizer**. Transfer learning was applied by freezing the majority of the backbone layers and selectively unfreezing the final inverted residual blocks.
+
+Key training and tuning parameters included:
+- learning rate
+- weight decay
+- dropout rate
+- batch size
+- number of unfrozen MobileNetV2 blocks
+
+Hyperparameter tuning was performed using an automated search strategy, and the configuration achieving the best validation performance was selected for final training. Early stopping based on validation loss was used to prevent overfitting.
+
+---
+
 ## Inference Pipeline
 
-The inference pipeline loads the TensorFlow Lite model, preprocesses input images, performs prediction, and aggregates results.
+After training, the best-performing model was converted to **TensorFlow Lite (TFLite)** format. The inference pipeline loads the TFLite model, preprocesses input images, performs prediction, and stores results in a **pandas DataFrame**.
 
-All predictions are stored in a pandas DataFrame with two columns: image_name and prediction. The DataFrame is saved as a CSV file for easy evaluation and analysis.
+For each image in the test folder, the pipeline records:
+- image name
+- predicted orientation
+
+The DataFrame is saved as a **CSV file** for evaluation.
+
+---
 
 ## Instructions to Run on a New System
 
-Create and activate a conda environment (optional but recommended):
+The project can be executed on any system with **Python version 3.10 or above**.
 
-conda create -n cq_cv python=3.10 -y  
-conda activate cq_cv  
+### Step 1: (Optional) Create and Activate Conda Environment
 
-Alternatively, the project can be run using any Python version 3.10 or above.
+```bash
+conda create -n cq_cv python=3.10 -y
+conda activate cq_cv
+```
 
-Install dependencies from the project root directory:
+### Step 2: Install Required Dependencies
 
-pip install -r requirements.txt  
+```bash
+pip install -r requirements.txt
+```
 
-Prepare test images by placing all images directly inside a single folder without subfolders.
+### Step 3: Run Inference on Test Images
 
-Run inference using the following command:
-
-python test_predict.py --test_dir test_images  
-
-To specify a custom output file name:
-
-python test_predict.py --test_dir test_images --output predictions.csv  
-
-## Notes
-
-- The pipeline runs entirely on CPU.
-- GPU or CUDA is not required.
-- TensorFlow startup warnings can be safely ignored.
-- Corrupt or unreadable images are automatically labeled as `random`.
-
-## Conclusion
-
-This project demonstrates a complete and production-ready computer vision pipeline, combining rule-based dataset labeling, deep learning model training, and edge-compatible inference with a clean and reproducible design.
+```bash
+python test_predict.py --test_dir <path_to_test_images>
+```
