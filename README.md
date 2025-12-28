@@ -99,20 +99,26 @@ The DataFrame is saved as a **CSV file** for evaluation.
 
 The project can be executed on any system with **Python version 3.10 or above**.
 
-### Step 1: (Optional) Create and Activate Conda Environment
+### Step 1: Clone the repo
+
+```bash
+git clone https://github.com/joshisomesh1996-star/clear_quote_cv.git
+```
+
+### Step 2: (Optional) Create and Activate Conda Environment
 
 ```bash
 conda create -n cq_cv python=3.10 -y
 conda activate cq_cv
 ```
 
-### Step 2: Install Required Dependencies
+### Step 3: Install Required Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 3: Run Inference on Test Images
+### Step 4: Run Inference on Test Images
 
 ```bash
 python test_predict.py --test_dir <path_to_test_images>
