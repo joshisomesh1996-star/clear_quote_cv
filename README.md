@@ -103,6 +103,7 @@ The project can be executed on any system with **Python version 3.10 or above**.
 
 ```bash
 git clone https://github.com/joshisomesh1996-star/clear_quote_cv.git
+cd clear_quote_cv
 ```
 
 ### Step 2: (Optional) Create and Activate Conda Environment
