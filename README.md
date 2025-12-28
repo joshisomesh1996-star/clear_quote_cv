@@ -99,7 +99,7 @@ The DataFrame is saved as a **CSV file** for evaluation.
 
 The project can be executed on any system with **Python version 3.10 or above**.
 
-### Step 1: Clone the repo
+### Step 1: Clone the repository and open it in your local environment
 
 ```bash
 git clone https://github.com/joshisomesh1996-star/clear_quote_cv.git
